@@ -1,0 +1,36 @@
+name: Composer Static Analysis
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - edited
+      - synchronize
+
+jobs:
+  composer-static-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'  # Adjust as needed
+          tools: composer:v2.8.6
+
+      - name: Verify Composer version
+        run: composer --version
+
+      - name: Update Composer
+        run: composer update
+
+      - name: Run Composer stan
+        run: composer stan
