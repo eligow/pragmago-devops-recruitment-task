@@ -1,0 +1,65 @@
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+      - beta
+
+jobs:
+  tag_version:
+    name: release version
+    permissions:
+      contents: write  # to be able to publish a GitHub release
+      issues: write  # to be able to comment on released issues
+      pull-requests: write  # to be able to comment on released pull requests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false  # make sure the release step uses its own credentials
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        id: semantic
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          semantic_version: 24
+          branches: |
+            [
+              "+([0-9])?(.{+([0-9]),x}).x",
+              "main",
+              "semantic-release",
+              { 
+                "name": "beta", 
+                "prerelease": true 
+              }
+            ]
+          extends: |
+            conventional-changelog-conventionalcommits@8.0.0
+          extra_plugins: |
+            @semantic-release/commit-analyzer@13.0.1
+            @semantic-release/release-notes-generator@14.0.3
+            @semantic-release/github@11.0.1
+            @semantic-release/changelog@6.0.3
+            @semantic-release/exec@7.0.3
+            @semantic-release/git@10.0.1
+
+      - name: Changelog version
+        run: echo ${{ steps.semantic.outputs.new_release_version }}
+
+    outputs:
+      new_release: ${{ steps.semantic.outputs.new_release_published }}
+      new_version: ${{ steps.semantic.outputs.new_release_version }}
+
+  github-publish:
+    name: GitHub Build & Publish - ${{ needs.tag_version.outputs.new_version }}
+    needs: [tag_version]
+    if: |
+      needs.check.outputs.has_gh_secrets
+        && needs.tag_version.outputs.new_release
+    uses: ./.github/workflows/build-release.yaml
+    with:
+      release_tag: ${{ needs.tag_version.outputs.new_version }}
+    secrets: inherit
