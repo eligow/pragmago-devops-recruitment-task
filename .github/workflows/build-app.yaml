@@ -11,6 +11,11 @@ on:
       - opened
       - edited
       - synchronize
+    paths:
+      - 'composer.json'
+      - 'composer.lock'
+      - 'src/**'
+      - 'Dockerfile'
 
 jobs:
   check-gh-key-secret:
@@ -48,7 +53,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      
       - name: Log in to the Container registry
         if: |
           success()
@@ -58,13 +63,12 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # TODO: Add semantic versioning for tags
+      
       # - name: Extract metadata (tags, labels) for Docker
       #   id: meta
       #   uses: docker/metadata-action@v5
       #   with:
-      #     images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.IMAGE_NAME }}
+      #     images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6

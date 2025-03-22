@@ -11,6 +11,11 @@ on:
       - opened
       - edited
       - synchronize
+    paths:
+      - 'composer.json'
+      - 'composer.lock'
+      - 'src/**'
+      - 'Dockerfile'
 
 jobs:
   composer-static-analysis:
