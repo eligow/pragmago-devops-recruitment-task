@@ -16,6 +16,12 @@ on:
         required: true
         type: string
 
+permissions:
+  id-token: write  # required to use OIDC authentication
+  contents: write  # required to checkout the code from the repo and to perform release
+  packages: write  # required to publish to packages
+  pull-requests: write
+
 jobs:
   check-gh-key-secret:
     name: GitHub Prerequisites Check
@@ -38,11 +44,6 @@ jobs:
   build-tag-push-docker-image:
     name: Build Docker image with tag and push to registry
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
 
     needs: [check-gh-key-secret]
     env:

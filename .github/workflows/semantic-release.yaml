@@ -6,13 +6,15 @@ on:
       - main
       - beta
 
+permissions:
+  id-token: write  # required to use OIDC authentication
+  contents: write  # required to checkout the code from the repo and to perform release
+  packages: write  # required to publish to 
+  pull-requests: write
+
 jobs:
   tag_version:
     name: release version
-    permissions:
-      contents: write  # to be able to publish a GitHub release
-      issues: write  # to be able to comment on released issues
-      pull-requests: write  # to be able to comment on released pull requests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
