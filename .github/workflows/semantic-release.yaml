@@ -13,9 +13,27 @@ permissions:
   pull-requests: write
 
 jobs:
+  check-gh-key-secret:
+    name: GitHub Prerequisites Check
+    runs-on: ubuntu-latest
+    outputs:
+      has_gh_secrets: ${{ steps.check-gh-key-secret.outputs.declared }}
+    steps:
+      - name: Check for GitHub Secret availability
+        id: check-gh-key-secret
+        shell: bash
+        run: |
+          if [[ ! -z  "${{ secrets.GITHUB_TOKEN }}" ]]; then
+            echo "All secrets are declared."
+            echo "declared=true" >> $GITHUB_OUTPUT;
+          else
+            echo "GITHUB_TOKEN secret is missing."
+            exit 1
+          fi
   tag_version:
     name: release version
     runs-on: ubuntu-latest
+    needs: [check-gh-key-secret]
     permissions:
       contents: write  # to be able to publish a GitHub release
       issues: write  # to be able to comment on released issues
@@ -63,7 +81,7 @@ jobs:
     name: GitHub Build & Publish - ${{ needs.tag_version.outputs.new_version }}
     needs: [tag_version]
     if: |
-      needs.check.outputs.has_gh_secrets
+      needs.check-gh-key-secret.outputs.has_gh_secrets
         && needs.tag_version.outputs.new_release
     uses: ./.github/workflows/build-release.yaml
     with:
