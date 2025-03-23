@@ -1,0 +1,79 @@
+name: Build Application - Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: |
+          'Version to manually release'
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      release_tag:
+        description: |
+          'Version to manually release'
+        required: true
+        type: string
+
+jobs:
+  check-gh-key-secret:
+    name: GitHub Prerequisites Check
+    runs-on: ubuntu-latest
+    outputs:
+      has_gh_secrets: ${{ steps.check-gh-key-secret.outputs.declared }}
+    steps:
+      - name: Check for GitHub Secret availability
+        id: check-gh-key-secret
+        shell: bash
+        run: |
+          if [[ ! -z  "${{ secrets.GITHUB_TOKEN }}" ]]; then
+            echo "All secrets are declared."
+            echo "declared=true" >> $GITHUB_OUTPUT;
+          else
+            echo "GITHUB_TOKEN secret is missing."
+            exit 1
+          fi
+
+  build-tag-push-docker-image:
+    name: Build Docker image with tag and push to registry
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    needs: [check-gh-key-secret]
+    env:
+      REGISTRY: ghcr.io
+      REPOSITORY: ${{ github.repository }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+            type=sha,format=long
+            type=semver,pattern={{version}},value=${{ inputs.release_tag }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
