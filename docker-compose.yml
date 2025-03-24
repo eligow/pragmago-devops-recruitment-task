@@ -1,0 +1,42 @@
+services:
+  app:
+    image: <set image name>
+    container_name: app
+    ports:
+      - "8080:8080"
+    networks:
+      - wp
+    environment:
+      - APP_ENV=dev
+      - APP_SECRET=<set secret>
+      - DATABASE_URL=<set postgresql database url>
+      - MESSENGER_TRANSPORT_DSN=doctrine://default
+      - REDIS_DSN=redis://redis-db:6379
+    # env_file:
+    #   - .env
+    depends_on:
+      - postgres
+      - redis
+  postgres:
+    image: postgres:15
+    container_name: postgres-db
+    networks:
+      - wp
+    environment:
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=<set password>
+      - POSTGRES_DB=app
+    ports:
+      - "5432:5432"
+  redis:
+    image: redis:6
+    container_name: redis-db
+    networks:
+      - wp
+    ports:
+      - "6379:6379"
+    
+networks:
+  wp:
+    # Specify driver options
+    driver: bridge
